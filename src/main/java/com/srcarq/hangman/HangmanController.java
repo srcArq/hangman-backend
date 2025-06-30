@@ -41,6 +41,7 @@ public class HangmanController {
             maskedWord.add("_");
         }
         
+        //Select attemps by level
         if(selectedLevel == 1){
             failAttempts = 10;
         } else if (selectedLevel == 2 ){
