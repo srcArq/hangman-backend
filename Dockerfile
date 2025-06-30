@@ -1,5 +1,5 @@
 # Etapa de construcción: usamos la imagen oficial de Maven con JDK 17
-FROM maven:3.8.5-openjdk-17 AS build
+FROM maven:3.8.5-openjdk-21 AS build
 WORKDIR /app
 
 # Copiamos todos los ficheros y compilamos sin tests para acelerar
