@@ -18,3 +18,4 @@ EXPOSE 8080
 
 # Comando por defecto al arrancar el contenedor
 ENTRYPOINT ["java", "-jar", "app.jar"]
+CMD ["java", "-jar", "target/hangman-backend-0.0.1-SNAPSHOT.jar"]
