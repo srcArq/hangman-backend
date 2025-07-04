@@ -9,8 +9,11 @@ steps:
         'build',
         '-t',
         'europe-southwest1-docker.pkg.dev/$PROJECT_ID/hangman-backend-docker/mi-app:$SHORT_SHA',
+        '-t',
+        'europe-southwest1-docker.pkg.dev/$PROJECT_ID/hangman-backend-docker/mi-app:latest',
         '.'
       ]
 
 images:
   - 'europe-southwest1-docker.pkg.dev/$PROJECT_ID/hangman-backend-docker/mi-app:$SHORT_SHA'
+  - 'europe-southwest1-docker.pkg.dev/$PROJECT_ID/hangman-backend-docker/mi-app:latest' 
