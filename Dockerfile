@@ -1,4 +1,4 @@
-# 1: Build con Maven + JDK 21
+#1: Build con Maven + JDK 21
 FROM maven:3.9.0-openjdk-21 AS build
 WORKDIR /workspace
 
