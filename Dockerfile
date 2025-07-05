@@ -1,25 +1,20 @@
-#1: Build con Maven + JDK 21
-FROM maven:3-openjdk-21 AS build
+# Stage 1: Build con Maven + JDK 21
+FROM maven:3.10.1-eclipse-temurin-21 AS build
+
 WORKDIR /workspace
-
-# Copiamos solo pom.xml primero para cacheo de dependencias
 COPY pom.xml .
-RUN mvn dependency:go-offline
-
-# Ahora copiamos el código fuente y compilamos
 COPY src ./src
+
+# Compila el jar (sin tests para acelerar; quita -DskipTests si quieres ejecutarlos)
 RUN mvn clean package -DskipTests
 
-# Etapa 2: Ejecución con JRE ligero
-FROM eclipse-temurin:21-jre
-WORKDIR /app
+# Stage 2: Runtime con JDK 21
+FROM eclipse-temurin:21-jdk-alpine
 
-# Copiamos el .jar compilado
+WORKDIR /app
 COPY --from=build /workspace/target/*.jar app.jar
 
-# Expone el puerto estándar
+ENV PORT 8080
 EXPOSE 8080
 
-# Solo usamos ENTRYPOINT limpio
-ENTRYPOINT ["java", "-jar", "app.jar"]
-
+ENTRYPOINT ["sh", "-c", "java -jar app.jar --server.port=${PORT}"]
