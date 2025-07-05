@@ -1,5 +1,5 @@
 # Stage 1: Build con Maven + JDK 21
-FROM maven:3.10.1-eclipse-temurin-21 AS build
+FROM maven:3.9.10-eclipse-temurin-21 AS build
 
 WORKDIR /workspace
 COPY pom.xml .
