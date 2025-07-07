@@ -3,6 +3,7 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 steps:
+  # 1) Construcción de la imagen Docker
   - name: 'gcr.io/cloud-builders/docker'
     args:
       [
@@ -14,6 +15,19 @@ steps:
         '.'
       ]
 
+  # 2) Despliegue en Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      [
+        'run', 'deploy', 'hangman-backend-service',
+        '--image',
+        'us-central1-docker.pkg.dev/$PROJECT_ID/hangman-backend-docker/mi-app:latest',
+        '--region', 'us-central1',
+        '--platform', 'managed',
+        '--allow-unauthenticated'
+      ]
+
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/hangman-backend-docker/mi-app:$SHORT_SHA'
-  - 'us-central1-docker.pkg.dev/$PROJECT_ID/hangman-backend-docker/mi-app:latest' 
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/hangman-backend-docker/mi-app:latest'
