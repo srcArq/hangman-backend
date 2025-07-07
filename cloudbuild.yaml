@@ -20,7 +20,7 @@ steps:
     entrypoint: 'gcloud'
     args:
       [
-        'run', 'deploy', 'hangman-backend-service',
+        'run', 'deploy', 'hangmanbackend',
         '--image',
         'us-central1-docker.pkg.dev/$PROJECT_ID/hangman-backend-docker/mi-app:latest',
         '--region', 'us-central1',
