@@ -25,7 +25,7 @@ public class WordFactory {
             "TREN", "BUS", "AVION", "BICI", "BOTE", "LLAVE", "PUERTA", "VASO", "TAZA", "PLATO",
             "TENEDOR", "CUCHILLO", "CUCHARA", "TOALLA", "CEPILLO", "ESPEJO", "RELOJ", "ANILLO", "SOMBRERO", "CAMISA",
             "PANTALON", "ZAPATO", "MEDIAS", "CHAQUETA", "GORRA", "GUANTE", "BUFANDA", "CHALECO", "CINTURON", "BOLSO",
-            "CARTA", "LIBRO", "DIARIO", "PLUMA", "LAPIZ", "BOLIGRAFO", "TIJERAS", "PEGAMENTO", "ÑU","PAPEL", "CARPETA"
+            "CARTA", "LIBRO", "DIARIO", "PLUMA", "LAPIZ", "BOLIGRAFO", "TIJERAS", "PEGAMENTO", "ÑU", "PAPEL", "CARPETA"
     );
 
     private List<String> wordListMedium = List.of(
