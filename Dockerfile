@@ -1,20 +1,20 @@
-# Etapa de construcción: usamos la imagen oficial de Maven con JDK 17
-FROM maven:3.8.5-openjdk-17 AS build
-WORKDIR /app
+# Stage 1: Build con Maven + JDK 21
+FROM maven:3.9.10-eclipse-temurin-21 AS build
 
-# Copiamos todos los ficheros y compilamos sin tests para acelerar
-COPY . .
+WORKDIR /workspace
+COPY pom.xml .
+COPY src ./src
+
+# Compila el jar (sin tests para acelerar; quita -DskipTests si quieres ejecutarlos)
 RUN mvn clean package -DskipTests
 
-# Etapa de ejecución: usamos un JRE ligero
-FROM eclipse-temurin:17-jdk
+# Stage 2: Runtime con JDK 21
+FROM eclipse-temurin:21-jdk-alpine
+
 WORKDIR /app
+COPY --from=build /workspace/target/*.jar app.jar
 
-# Copiamos el JAR compilado desde la fase de build
-COPY --from=build /app/target/*.jar app.jar
-
-# Exponemos el puerto que configura Spring Boot (8080)
+ENV PORT 8080
 EXPOSE 8080
 
-# Comando por defecto al arrancar el contenedor
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["sh", "-c", "java -jar app.jar --server.port=${PORT}"]
