@@ -22,7 +22,7 @@ _A RESTful backend for the Hangman game, built with Spring Boot and Docker-enabl
 - **Framework:** Spring Boot 3.5.3  
 - **Build Tool:** Maven  
 - **Containerization:** Docker (Alpine-based runtime)  
-- **CI/CD:** Google Cloud Build → Cloud Run  
+- **CI/CD:** Render → Cloud Run  
 - **Codegen & Boilerplate:** Lombok  
 
 ---
@@ -34,7 +34,7 @@ _A RESTful backend for the Hangman game, built with Spring Boot and Docker-enabl
 - Java 21 JDK  
 - Maven 3.x  
 - Docker (if you plan to build or run the container)  
-- (Optional) Google Cloud SDK, for Cloud Build & Run  
+  
 
 ### Clone & Run Locally
 
