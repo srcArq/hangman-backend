@@ -1,92 +1,54 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.srcarq.hangman;
 
+import jakarta.validation.Valid;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
+ * API del juego. El controlador no guarda estado: toda la partida vive en el
+ * token cifrado que viaja con cada petición, por lo que es seguro entre
+ * peticiones concurrentes y compatible con despliegues multi-instancia.
  *
  * @author srcarq
  */
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "*")
 public class HangmanController {
 
-    @Autowired
-    private WordFactory wordFactory;
+    private final GameService gameService;
+    private final GameCodec gameCodec;
 
-    private int failAttempts;
-    private String selectedWord;
-    private List<String> maskedWord = new ArrayList<>();
+    public HangmanController(GameService gameService, GameCodec gameCodec) {
+        this.gameService = gameService;
+        this.gameCodec = gameCodec;
+    }
 
     @PostMapping("/selectLevel")
-    public Map<String, Object> selectLevel(@RequestBody Map<String, Integer> body) {
-        maskedWord = new ArrayList<>();
-        int selectedLevel = body.get("level");
-        selectedWord = wordFactory.selectWordByLevel(selectedLevel);
-
-        int sizeWord = selectedWord.length();
-        for (int i = 0; i < sizeWord; i++) {
-            maskedWord.add("_");
-        }
-        
-        //Select attemps by level
-        if(selectedLevel == 1){
-            failAttempts = 10;
-        } else if (selectedLevel == 2 ){
-            failAttempts = 7;
-        } else{
-            failAttempts = 5;
-        }
-
-        Map<String, Object> response = Map.of(
-                "attempts", failAttempts,
-                "maskedWord", maskedWord,
-                "selectedWord", selectedWord
-        );
-        return response;
+    public GameResponse selectLevel(@Valid @RequestBody SelectLevelRequest request) {
+        GameState state = gameService.newGame(Difficulty.fromLevel(request.level()));
+        return toResponse(state);
     }
 
     @PostMapping("/checkLetter")
-    public Map<String, Object> checkLetter(@RequestBody Map<String, String> body) {
-        String selectedLetter = body.get("letter");
-
-        int containsLetter = selectedWord.indexOf(selectedLetter);
-
-        if (containsLetter == -1) {
-            failAttempts -= 1;
-        } else {
-            for (int i = 0; i < selectedWord.length(); i++) {
-                if (String.valueOf(selectedWord.charAt(i)).equals(selectedLetter)) {
-                    maskedWord.set(i, selectedLetter);
-                }
-
-            }
-        }
-        
-        
-        boolean isWinner = !maskedWord.contains("_");
-        
-        Map<String, Object> response = Map.of(
-                "attempts", failAttempts,
-                "maskedWord", maskedWord,
-                "isGameOver", failAttempts <=0,
-                "isWinner", isWinner,
-                "resultWord", failAttempts <=0 ? selectedWord : ""
-        );
-        return response;
+    public GameResponse checkLetter(@Valid @RequestBody CheckLetterRequest request) {
+        GameState current = gameCodec.decode(request.token());
+        GameState next = gameService.guess(current, request.letter());
+        return toResponse(next);
     }
-    
 
+    private GameResponse toResponse(GameState state) {
+        boolean finished = state.status() != GameStatus.IN_PROGRESS;
+        return new GameResponse(
+                gameCodec.encode(state),
+                state.masked(),
+                state.attempts(),
+                new ArrayList<>(state.guessed()),
+                state.word().length(),
+                state.status().name(),
+                finished ? state.word() : null
+        );
+    }
 }

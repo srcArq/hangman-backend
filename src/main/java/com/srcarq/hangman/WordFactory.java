@@ -1,11 +1,7 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.srcarq.hangman;
 
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import org.springframework.stereotype.Component;
 
 /**
@@ -31,13 +27,13 @@ public class WordFactory {
     private List<String> wordListMedium = List.of(
             "CAMPAÑA", "BOSQUE", "AVISPON", "JARDINERO", "GALLINAS", "ESCALERA", "COMETA", "CIRCUITO", "ALFOMBRA", "ASTILLA",
             "BOTELLON", "CAMAROTE", "DEFENSOR", "ELEFANTE", "FABRICA", "GALAXIA", "HELICES", "ILUSION", "JUGUETES", "FERIA",
-            "LIBRERIA", "MAQUINAS", "NACIONAL", "OPERADOR", "PRODUCTO", "QUIMICOS", "RELOJERA", "SALVAJEZ", "TAMBORES", "UNIVERSO",
+            "LIBRERIA", "MAQUINAS", "NACIONAL", "OPERADOR", "PRODUCTO", "QUIMICOS", "RELOJERA", "SALVAJE", "TAMBORES", "UNIVERSO",
             "VACACIONES", "CASTAÑA", "XILOFONO", "YACIMIENTO", "ZAPATERIA", "ACUMULAR", "BRINDAR", "CAPITULO", "DETALLE", "EMBARCAR",
             "FRASEAR", "GESTIONAR", "HILANDAR", "IMPULSAR", "JUBILADO", "KILOMETRO", "LOGISTICA", "MONUMENTO", "NAVEGABLE", "OFERTA",
             "PRINCIPIO", "QUEDARSE", "RESONAR", "SISTEMA", "TRIUNFAR", "USUARIO", "VIGILANCIA", "ADMINISTRADOR", "JUGULAR", "ZOOTECNIA",
             "ACORDES", "BOTONERA", "CIFRARSE", "ANTAÑO", "ENTREGA", "FOTOGRAFO", "GIMNASIO", "HORMIGON", "IDENTIDAD", "JOVENES",
             "CABAÑA", "LECHUGAS", "MOTIVADO", "NEURONA", "OBSERVAR", "PINTORAS", "QUINIELA", "RECICLAR", "SIMETRIA", "TERRENO",
-            "ULTRASONIDO", "VALORADO", "REBAÑO", "MEDICO", "ZONIFICA", "AUTOMATA", "BALIZADO", "CLIMATICO", "DIGITAL", "ELECTRICO"
+            "ULTRASONIDO", "VALORADO", "REBAÑO", "MEDICO", "ZONIFICA", "AUTOMATA", "BALIZADO", "CLIMATICO", "DIGITAL", "MONTAÑA", "ELECTRICO"
     );
 
     private List<String> wordListHard = List.of(
@@ -52,27 +48,15 @@ public class WordFactory {
     );
 
     public String selectWordByLevel(int level) {
-        Random random = new Random();
-        List<String> words;
-        switch (level) {
-            case 1:
-                words = wordListEasy;
-                break;
-            case 2:
-                words = wordListMedium;
-                break;
-            case 3:
-                words = wordListHard;
-                break;
-            default:
-                throw new IllegalArgumentException("Error");
+        List<String> words = switch (level) {
+            case 1 -> wordListEasy;
+            case 2 -> wordListMedium;
+            case 3 -> wordListHard;
+            default -> throw new IllegalArgumentException("Nivel no válido: " + level + " (use 1, 2 o 3)");
+        };
 
-        }
-
-        int randomNum = random.nextInt(words.size());
-        String selectedWord = words.get(randomNum);
-
-        return selectedWord;
+        int randomNum = ThreadLocalRandom.current().nextInt(words.size());
+        return words.get(randomNum);
     }
 
 }
