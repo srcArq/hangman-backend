@@ -1,0 +1,25 @@
+name: Keep Render awake
+
+# Render (plan free) duerme el servicio tras ~15 min sin tráfico, lo que provoca
+# un arranque en frío lento (~30-50s) en la primera petición. Este workflow hace
+# ping al health endpoint cada ~10 min para mantenerlo despierto.
+#
+# Notas:
+# - El cron de GitHub Actions es "best-effort" (puede retrasarse en horas punta).
+# - GitHub desactiva los workflows programados tras 60 días sin actividad en el repo.
+# - En repos públicos los minutos de Actions son ilimitados.
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health endpoint
+        run: |
+          curl -fsS --max-time 90 https://hangman-backend-1.onrender.com/actuator/health \
+            && echo "OK: backend despierto" \
+            || echo "Aviso: el ping no devolvió 2xx (puede estar arrancando)"

@@ -13,8 +13,10 @@ public record CheckLetterRequest(
         @NotBlank(message = "Falta el token de la partida")
         String token,
 
+        // Incluimos ambos casos de la Ñ explícitamente: (?i) en Java solo pliega
+        // mayúsculas/minúsculas ASCII, por lo que 'Ñ' no casaría con [a-zñ].
         @NotBlank(message = "Falta la letra")
-        @Pattern(regexp = "(?i)^[a-zñ]$", message = "La letra debe ser una única letra (A-Z o Ñ)")
+        @Pattern(regexp = "^[A-Za-zÑñ]$", message = "La letra debe ser una única letra (A-Z o Ñ)")
         String letter
 ) {
 }

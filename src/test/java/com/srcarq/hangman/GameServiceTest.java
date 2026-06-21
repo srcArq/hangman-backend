@@ -10,7 +10,9 @@ import org.junit.jupiter.api.Test;
 
 class GameServiceTest {
 
-    private final GameService service = new GameService(new WordFactory());
+    // Proveedor de palabras de prueba: una palabra fija e independiente de Mongo.
+    private final WordProvider words = (language, level) -> "CASA";
+    private final GameService service = new GameService(words);
 
     private GameState gameWith(String word, int attempts) {
         List<String> masked = new ArrayList<>();
@@ -23,14 +25,14 @@ class GameServiceTest {
 
     @Test
     void newGameMasksAllLettersAndSetsAttemptsByLevel() {
-        GameState easy = service.newGame(Difficulty.EASY);
+        GameState easy = service.newGame(Difficulty.EASY, Language.ES);
         assertThat(easy.attempts()).isEqualTo(10);
         assertThat(easy.masked()).containsOnly("_");
         assertThat(easy.masked()).hasSize(easy.word().length());
         assertThat(easy.status()).isEqualTo(GameStatus.IN_PROGRESS);
 
-        assertThat(service.newGame(Difficulty.MEDIUM).attempts()).isEqualTo(7);
-        assertThat(service.newGame(Difficulty.HARD).attempts()).isEqualTo(5);
+        assertThat(service.newGame(Difficulty.MEDIUM, Language.CA).attempts()).isEqualTo(7);
+        assertThat(service.newGame(Difficulty.HARD, Language.EN).attempts()).isEqualTo(5);
     }
 
     @Test

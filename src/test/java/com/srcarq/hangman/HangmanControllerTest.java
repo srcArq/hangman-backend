@@ -113,4 +113,17 @@ class HangmanControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("INVALID_TOKEN"));
     }
+
+    @Test
+    void acceptsEnyeLetterUpperAndLowercase() throws Exception {
+        String token = selectLevel(1).get("token").asText();
+        mockMvc.perform(post("/api/checkLetter")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(checkLetterBody(token, "Ñ")))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/checkLetter")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(checkLetterBody(token, "ñ")))
+                .andExpect(status().isOk());
+    }
 }

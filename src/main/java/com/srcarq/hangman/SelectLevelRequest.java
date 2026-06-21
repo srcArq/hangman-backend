@@ -11,6 +11,9 @@ import jakarta.validation.constraints.Min;
 public record SelectLevelRequest(
         @Min(value = 1, message = "El nivel debe ser 1, 2 o 3")
         @Max(value = 3, message = "El nivel debe ser 1, 2 o 3")
-        int level
+        int level,
+
+        // Opcional: ES (por defecto), CA o EN. Si es inválido se usa ES.
+        String language
 ) {
 }

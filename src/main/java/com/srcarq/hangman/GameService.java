@@ -17,15 +17,15 @@ import org.springframework.stereotype.Service;
 @Service
 public class GameService {
 
-    private final WordFactory wordFactory;
+    private final WordProvider wordProvider;
 
-    public GameService(WordFactory wordFactory) {
-        this.wordFactory = wordFactory;
+    public GameService(WordProvider wordProvider) {
+        this.wordProvider = wordProvider;
     }
 
     /** Crea una partida nueva con la palabra enmascarada y los intentos del nivel. */
-    public GameState newGame(Difficulty difficulty) {
-        String word = wordFactory.selectWordByLevel(difficulty.getLevel());
+    public GameState newGame(Difficulty difficulty, Language language) {
+        String word = wordProvider.selectWord(language, difficulty.getLevel());
         List<String> masked = new ArrayList<>(word.length());
         for (int i = 0; i < word.length(); i++) {
             masked.add("_");

@@ -1,6 +1,9 @@
 HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar
+
+# Secreto local: cadena de conexión de MongoDB (nunca subir al repo)
+.mongo-uri
 !**/src/main/**/target/
 !**/src/test/**/target/
 
