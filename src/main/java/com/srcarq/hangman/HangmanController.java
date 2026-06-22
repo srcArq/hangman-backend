@@ -47,10 +47,11 @@ public class HangmanController {
         return toResponse(next);
     }
 
-    /** Registra una victoria del jugador en el ranking. */
+    /** Registra una victoria del jugador en el ranking (verifica el token ganador). */
     @PostMapping("/score")
     public List<RankingEntry> recordWin(@Valid @RequestBody ScoreRequest request) {
-        leaderboardService.recordWin(request.name().trim());
+        GameState state = gameCodec.decode(request.token());
+        leaderboardService.recordWin(request.name().trim(), state, request.token());
         return ranking();
     }
 

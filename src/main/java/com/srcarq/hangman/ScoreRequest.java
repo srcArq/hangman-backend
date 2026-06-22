@@ -13,6 +13,10 @@ public record ScoreRequest(
         @NotBlank(message = "Falta el nombre")
         @Size(max = 20, message = "El nombre no puede superar 20 caracteres")
         @Pattern(regexp = "^[\\p{L}0-9 _.-]{1,20}$", message = "Nombre no válido")
-        String name
+        String name,
+
+        // Token de la partida ganada: el servidor verifica que realmente es WON.
+        @NotBlank(message = "Falta el token de la partida")
+        String token
 ) {
 }
