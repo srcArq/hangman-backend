@@ -18,7 +18,7 @@ class WordServiceTest {
         service.init();
 
         for (Language lang : Language.values()) {
-            for (int level = 1; level <= 3; level++) {
+            for (int level = 1; level <= 4; level++) {
                 String word = service.selectWord(lang, level);
                 assertThat(word)
                         .as("palabra de %s nivel %d", lang, level)

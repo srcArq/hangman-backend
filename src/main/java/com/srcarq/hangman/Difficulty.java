@@ -9,7 +9,10 @@ package com.srcarq.hangman;
 public enum Difficulty {
     EASY(1, 10),
     MEDIUM(2, 7),
-    HARD(3, 5);
+    HARD(3, 5),
+    // Extremo: el límite es el TIEMPO (gestionado en el cliente), no los intentos,
+    // por eso un valor alto: los fallos restan tiempo pero no terminan la partida.
+    EXTREME(4, 99);
 
     private final int level;
     private final int attempts;
@@ -33,6 +36,6 @@ public enum Difficulty {
                 return difficulty;
             }
         }
-        throw new IllegalArgumentException("Nivel no válido: " + level + " (use 1, 2 o 3)");
+        throw new IllegalArgumentException("Nivel no válido: " + level + " (use 1, 2, 3 o 4)");
     }
 }

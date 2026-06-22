@@ -32,7 +32,7 @@ import org.springframework.stereotype.Service;
 public class WordService implements WordProvider {
 
     private static final Logger log = LoggerFactory.getLogger(WordService.class);
-    private static final int[] LEVELS = {1, 2, 3};
+    private static final int[] LEVELS = {1, 2, 3, 4};
 
     private final WordRepository wordRepository;
     private final Map<String, List<String>> cache = new ConcurrentHashMap<>();
