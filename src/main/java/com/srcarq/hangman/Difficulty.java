@@ -7,19 +7,26 @@ package com.srcarq.hangman;
  * @author srcarq
  */
 public enum Difficulty {
-    EASY(1, 10),
-    MEDIUM(2, 7),
-    HARD(3, 5),
-    // Extremo: el límite es el TIEMPO (gestionado en el cliente), no los intentos,
-    // por eso un valor alto: los fallos restan tiempo pero no terminan la partida.
-    EXTREME(4, 99);
+    EASY(1, 10, 0, 0, 0),
+    MEDIUM(2, 7, 0, 0, 0),
+    HARD(3, 5, 0, 0, 0),
+    // En Extremo el servidor es la fuente de verdad del reloj. El valor alto de
+    // intentos conserva el dibujo fuera del flujo, pero no sustituye al tiempo.
+    EXTREME(4, 99, 30_000, 4_000, 6_000);
 
     private final int level;
     private final int attempts;
+    private final long initialTimeMillis;
+    private final long hitBonusMillis;
+    private final long missPenaltyMillis;
 
-    Difficulty(int level, int attempts) {
+    Difficulty(int level, int attempts, long initialTimeMillis,
+               long hitBonusMillis, long missPenaltyMillis) {
         this.level = level;
         this.attempts = attempts;
+        this.initialTimeMillis = initialTimeMillis;
+        this.hitBonusMillis = hitBonusMillis;
+        this.missPenaltyMillis = missPenaltyMillis;
     }
 
     public int getLevel() {
@@ -28,6 +35,22 @@ public enum Difficulty {
 
     public int getAttempts() {
         return attempts;
+    }
+
+    public boolean isTimed() {
+        return initialTimeMillis > 0;
+    }
+
+    public long getInitialTimeMillis() {
+        return initialTimeMillis;
+    }
+
+    public long getHitBonusMillis() {
+        return hitBonusMillis;
+    }
+
+    public long getMissPenaltyMillis() {
+        return missPenaltyMillis;
     }
 
     public static Difficulty fromLevel(int level) {

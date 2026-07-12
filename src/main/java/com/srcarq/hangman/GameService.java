@@ -1,10 +1,13 @@
 package com.srcarq.hangman;
 
 import java.util.ArrayList;
+import java.time.Clock;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
@@ -18,9 +21,16 @@ import org.springframework.stereotype.Service;
 public class GameService {
 
     private final WordProvider wordProvider;
+    private final Clock clock;
 
+    @Autowired
     public GameService(WordProvider wordProvider) {
+        this(wordProvider, Clock.systemUTC());
+    }
+
+    GameService(WordProvider wordProvider, Clock clock) {
         this.wordProvider = wordProvider;
+        this.clock = clock;
     }
 
     /** Crea una partida nueva con la palabra enmascarada y los intentos del nivel. */
@@ -30,8 +40,11 @@ public class GameService {
         for (int i = 0; i < word.length(); i++) {
             masked.add("_");
         }
-        return new GameState(word, masked, difficulty.getAttempts(),
-                new LinkedHashSet<>(), GameStatus.IN_PROGRESS, difficulty);
+        long now = clock.millis();
+        return new GameState(UUID.randomUUID().toString(), word, masked,
+                difficulty.getAttempts(), new LinkedHashSet<>(),
+                GameStatus.IN_PROGRESS, difficulty,
+                difficulty.getInitialTimeMillis(), difficulty.isTimed() ? now : 0);
     }
 
     /**
@@ -46,10 +59,23 @@ public class GameService {
         }
 
         String letter = normalizeLetter(rawLetter);
+        long now = clock.millis();
+        long remainingTime = remainingTimeAt(state, now);
+
+        // Un token antiguo no permite reiniciar el reloj: se descuenta todo el
+        // tiempo transcurrido desde la última acción registrada por el servidor.
+        if (state.difficulty().isTimed() && remainingTime <= 0) {
+            return copyWith(state, state.masked(), state.attempts(), state.guessed(),
+                    GameStatus.LOST, 0, now);
+        }
 
         // Idempotente: una letra ya intentada no penaliza ni cambia el estado.
         if (state.guessed().contains(letter)) {
-            return state;
+            if (!state.difficulty().isTimed()) {
+                return state;
+            }
+            return copyWith(state, state.masked(), state.attempts(), state.guessed(),
+                    state.status(), remainingTime, now);
         }
 
         Set<String> guessed = new LinkedHashSet<>(state.guessed());
@@ -67,16 +93,42 @@ public class GameService {
 
         int attempts = hit ? state.attempts() : state.attempts() - 1;
 
+        if (state.difficulty().isTimed()) {
+            remainingTime += hit
+                    ? state.difficulty().getHitBonusMillis()
+                    : -state.difficulty().getMissPenaltyMillis();
+            remainingTime = Math.max(0, remainingTime);
+        }
+
         GameStatus status;
         if (!masked.contains("_")) {
             status = GameStatus.WON;
+        } else if (state.difficulty().isTimed() && remainingTime <= 0) {
+            status = GameStatus.LOST;
         } else if (attempts <= 0) {
             status = GameStatus.LOST;
         } else {
             status = GameStatus.IN_PROGRESS;
         }
 
-        return new GameState(word, masked, attempts, guessed, status, state.difficulty());
+        return copyWith(state, masked, attempts, guessed, status, remainingTime,
+                state.difficulty().isTimed() ? now : 0);
+    }
+
+    private long remainingTimeAt(GameState state, long now) {
+        if (!state.difficulty().isTimed()) {
+            return 0;
+        }
+        long elapsed = Math.max(0, now - state.timerUpdatedAtEpochMillis());
+        return Math.max(0, state.remainingTimeMillis() - elapsed);
+    }
+
+    private GameState copyWith(GameState state, List<String> masked, int attempts,
+                               Set<String> guessed, GameStatus status,
+                               long remainingTimeMillis, long timerUpdatedAtEpochMillis) {
+        return new GameState(state.gameId(), state.word(), masked, attempts, guessed,
+                status, state.difficulty(), remainingTimeMillis,
+                timerUpdatedAtEpochMillis);
     }
 
     private String normalizeLetter(String rawLetter) {

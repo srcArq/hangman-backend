@@ -16,6 +16,7 @@ public record GameResponse(
         List<String> guessedLetters,
         int wordLength,
         String status,
-        String resultWord
+        String resultWord,
+        long remainingTimeMillis
 ) {
 }

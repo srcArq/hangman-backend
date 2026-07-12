@@ -1,92 +1,102 @@
-# Hangman Backend
+# Ahorcado Backend
 
-_A RESTful backend for the Hangman game, built with Spring Boot and MongoDB, Docker-enabled for easy deployment._
-
----
-
-## 💻 Features
-
-- **Spring Boot 3.5.3** application running on Java 21
-- **Maven**-driven build and dependency management
-- **MongoDB** (Spring Data MongoDB) for the persistent leaderboard / ranking
-- **Stateless gameplay**: the whole game state travels in an encrypted token on every request; only the ranking is persisted
-- **Spring Boot Actuator** health endpoint (`/actuator/health`)
-- **Docker** multi-stage build for a lean runtime image
-- **JUnit 5** & **Spring Boot Test** for unit and integration testing
+API REST del juego del Ahorcado, construida con Spring Boot, Java 21 y MongoDB.
 
 ---
 
-## 🛠️ Tech Stack
+## Funcionalidades
+
+- Spring Boot 3.5.3 sobre Java 21.
+- Partidas sin sesión de servidor: el estado viaja cifrado con AES-GCM.
+- La palabra nunca se revela mientras la partida está en curso.
+- Cuatro dificultades, incluido el modo Extremo con tiempo controlado por el servidor.
+- Castellano, catalán e inglés con **827 palabras** incluidas en recursos.
+- Catálogo de palabras sincronizado con MongoDB y caché en memoria.
+- Fallback automático a recursos si Mongo no está disponible para seleccionar palabras.
+- Ranking global top 5 persistente en MongoDB.
+- Verificación del token ganador y deduplicación por partida para impedir sumar una victoria varias veces.
+- Validación de entrada, CORS configurable y health check de Actuator.
+- Imagen Docker multi-stage con JRE 21 y usuario sin privilegios.
+
+---
+
+## Stack
 
 - **Language:** Java 21
 - **Framework:** Spring Boot 3.5.3 (`spring-boot-starter-web`, `-validation`, `-actuator`, `-data-mongodb`)
-- **Database:** MongoDB (MongoDB Atlas in production)
+- **Database:** MongoDB Atlas en producción; recursos locales como fallback del catálogo
 - **Build Tool:** Maven (artifact `hangman-0.0.1-SNAPSHOT.jar`)
 - **Containerization:** Docker multi-stage build — builder `eclipse-temurin:21-jdk-jammy`, runtime `eclipse-temurin:21-jre-jammy` (Temurin JRE on Ubuntu Jammy)
 
 ---
 
-## 🌐 REST API
+## API REST
 
-All endpoints are served under the `/api` base path (see `HangmanController`).
+Todos los endpoints se sirven bajo el prefijo `/api` definido en `HangmanController`.
 
 | Method | Path                | Description                                                                 |
 | ------ | ------------------- | --------------------------------------------------------------------------- |
-| `POST` | `/api/selectLevel`  | Starts a new game. Body: `{ "level": 1-4, "language": "ES" \| "CA" \| "EN" }` (language optional, defaults to `ES`). Returns the game state with an encrypted `token`. |
-| `POST` | `/api/checkLetter`  | Plays a letter on an existing game. Body: `{ "token": "...", "letter": "A-Z or Ñ" }`. Returns the updated game state. |
-| `POST` | `/api/score`        | Records a win in the ranking (the server verifies the winning token). Body: `{ "name": "...", "token": "..." }`. Returns the current ranking. |
-| `GET`  | `/api/ranking`      | Returns the top 5 players by number of wins.                                |
+| `POST` | `/api/selectLevel`  | Inicia una partida. Body: `{ "level": 1-4, "language": "ES" \| "CA" \| "EN" }` (`language` es opcional y por defecto usa `ES`). Devuelve el estado con un `token` cifrado. |
+| `POST` | `/api/checkLetter`  | Juega una letra. Body: `{ "token": "...", "letter": "A-Z o Ñ" }`. Devuelve el estado actualizado. |
+| `POST` | `/api/score`        | Registra una victoria verificada y deduplicada. Body: `{ "name": "...", "token": "..." }`. Devuelve el ranking actual. |
+| `GET`  | `/api/ranking`      | Devuelve el top 5 de jugadores por número de victorias.                     |
 
-The game response includes the (re-encrypted) `token`, the masked word, remaining attempts, guessed letters, word length, status, and — only when the game has finished — the revealed word.
+La respuesta de juego contiene `token`, `maskedWord`, `attempts`,
+`guessedLetters`, `wordLength`, `status`, `resultWord` y
+`remainingTimeMillis`. `resultWord` solo contiene la palabra cuando el estado es
+`WON` o `LOST`.
 
 ---
 
-## ⚙️ Configuration & Environment Variables
+## Configuración
 
-Configuration lives in `src/main/resources/application.properties`. The following environment variables override the development defaults and **should be set in production**:
+La configuración vive en `src/main/resources/application.properties`. Estas variables de entorno sobrescriben los valores de desarrollo y **deben configurarse en producción**:
 
-| Variable                | Default (dev only)                                                                 | Purpose                                                                 |
+| Variable                | Valor por defecto (solo desarrollo)                                                | Uso                                                                    |
 | ----------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `MONGODB_URI`           | `mongodb://localhost:27017/hangman?serverSelectionTimeoutMS=800`                   | MongoDB connection URI (MongoDB Atlas in production).                  |
-| `HANGMAN_TOKEN_SECRET`  | `dev-only-insecure-secret-change-me`                                               | Secret used to encrypt the game token (AES-GCM). **Set a long, random value in production.** |
-| `HANGMAN_CORS_ORIGINS`  | `http://localhost:4321,https://hangman-frontend-sable.vercel.app`                  | Comma-separated list of CORS-allowed origins.                          |
-| `PORT`                  | `8080`                                                                             | HTTP port the server listens on.                                       |
+| `MONGODB_URI`           | `mongodb://localhost:27017/hangman?serverSelectionTimeoutMS=800`                   | URI de conexión a MongoDB (MongoDB Atlas en producción).               |
+| `HANGMAN_TOKEN_SECRET`  | `dev-only-insecure-secret-change-me`                                               | Secreto usado para cifrar el token de partida con AES-GCM. **Debe ser largo y aleatorio en producción.** |
+| `HANGMAN_CORS_ORIGINS`  | `http://localhost:4321,https://hangman-frontend-sable.vercel.app`                  | Lista de orígenes CORS permitidos, separada por comas.                 |
+| `PORT`                  | `8080`                                                                             | Puerto HTTP en el que escucha el servidor.                             |
 
-> **Note on MongoDB:** the game degrades gracefully if Mongo is unreachable — the word source falls back to bundled resources, and the Mongo health indicator is disabled so it does not bring down the global health check. MongoDB is only required for the persistent ranking. Running locally without a Mongo instance still lets you play; only `/api/score` and `/api/ranking` need the database.
+> Si MongoDB no responde, el juego sigue seleccionando palabras desde los
+> recursos incluidos. El ranking y la sincronización persistente del catálogo sí
+> requieren MongoDB. El indicador Mongo de Actuator está desactivado para que
+> una caída de la base de datos no marque como caído todo el servicio.
 
 ---
 
-## 🚀 Getting Started
+## Desarrollo local
 
-### Prerequisites
+### Requisitos
 
-- Java 21 JDK
-- Maven 3.x (the bundled Maven Wrapper `./mvnw` can be used instead)
-- Docker (if you plan to build or run the container)
-- MongoDB (optional for local play — see the note above; required for the ranking)
+- Java 21 JDK.
+- Maven 3.x, o el Maven Wrapper incluido (`./mvnw`).
+- Docker, si quieres construir o ejecutar el contenedor.
+- MongoDB opcional para jugar en local; necesario para ranking persistente.
 
-### Clone & Run Locally
+### Clonar y ejecutar en local
 
 ```bash
 git clone https://github.com/srcArq/hangman-backend.git
 cd hangman-backend
 
-# Build the JAR (skip tests for speed; remove -DskipTests to run them)
-mvn clean package -DskipTests
+# Genera el JAR; quita -DskipTests si quieres ejecutar los tests
+./mvnw clean package
 
-# Run the application
+# Ejecuta la aplicación
 java -jar target/hangman-0.0.1-SNAPSHOT.jar
 ```
 
-The app starts on port `8080` by default. Health check: `http://localhost:8080/actuator/health`.
+La aplicación arranca por defecto en el puerto `8080`. Health check: `http://localhost:8080/actuator/health`.
 
-### Run with Docker
+### Ejecutar con Docker
 
 ```bash
-# Build the image (multi-stage: builds the JAR, then runs it on a Temurin JRE)
+# Construye la imagen multi-stage
 docker build -t hangman-backend .
 
-# Run, providing the required environment variables
+# Ejecuta el contenedor con las variables necesarias
 docker run -p 8080:8080 \
   -e MONGODB_URI="<your-mongodb-uri>" \
   -e HANGMAN_TOKEN_SECRET="<your-random-secret>" \
@@ -96,9 +106,10 @@ docker run -p 8080:8080 \
 
 ---
 
-## ☁️ Deployment
+## Despliegue
 
-- **Live deployment runs on [Render](https://render.com)** (free plan), reachable at `https://hangman-backend-1.onrender.com`. Because the free plan sleeps the service after ~15 min of inactivity, the GitHub Actions workflow `.github/workflows/keep-alive.yml` pings `/actuator/health` every ~10 minutes to keep it awake.
-- **Google Cloud Run is also supported** via `cloudbuild.yaml`: Cloud Build builds the Docker image, pushes it to Artifact Registry (`us-central1-docker.pkg.dev/$PROJECT_ID/hangman-backend-docker/mi-app`), and deploys the `hangmanbackend` service to Cloud Run in `us-central1`. This path is optional and triggered through Google Cloud Build.
+- Producción principal: [Render](https://hangman-backend-1.onrender.com), desplegado desde `main`.
+- `.github/workflows/keep-alive.yml` consulta `/actuator/health` cada 10 minutos mediante un cron best-effort.
+- `cloudbuild.yaml` mantiene una ruta alternativa: construye la imagen, la publica en Artifact Registry y despliega `hangmanbackend` en Cloud Run (`us-central1`).
 
-Remember to configure `MONGODB_URI`, `HANGMAN_TOKEN_SECRET`, and `HANGMAN_CORS_ORIGINS` in whichever platform you deploy to.
+Recuerda configurar `MONGODB_URI`, `HANGMAN_TOKEN_SECRET` y `HANGMAN_CORS_ORIGINS` en la plataforma donde despliegues.

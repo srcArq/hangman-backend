@@ -11,11 +11,14 @@ import java.util.Set;
  * @author srcarq
  */
 public record GameState(
+        String gameId,
         String word,
         List<String> masked,
         int attempts,
         Set<String> guessed,
         GameStatus status,
-        Difficulty difficulty
+        Difficulty difficulty,
+        long remainingTimeMillis,
+        long timerUpdatedAtEpochMillis
 ) {
 }

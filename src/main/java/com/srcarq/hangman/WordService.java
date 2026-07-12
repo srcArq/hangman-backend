@@ -44,25 +44,22 @@ public class WordService implements WordProvider {
     @EventListener(ApplicationReadyEvent.class)
     public void init() {
         List<Word> all = buildAllFromResources();
+        // Los recursos son siempre la base disponible, incluso durante un
+        // arranque parcial o una caída de Mongo.
+        loadIntoCache(all);
         try {
-            long count = wordRepository.count();
-            if (count != all.size()) {
-                // Reconcilia en un par de viajes: borra todo e inserta por lotes.
-                wordRepository.deleteAll();
-                if (!all.isEmpty()) {
-                    wordRepository.insert(all);
-                }
-                log.info("Palabras sembradas en MongoDB ({} palabras).", all.size());
+            if (!all.isEmpty()) {
+                // IDs deterministas: saveAll actúa como upsert idempotente y no
+                // borra palabras personalizadas ni deja la colección vacía si
+                // dos instancias arrancan a la vez.
+                wordRepository.saveAll(all);
             }
             loadFromMongo();
             log.info("Palabras cargadas desde MongoDB ({} combinaciones idioma/nivel).", cache.size());
         } catch (Exception e) {
             log.warn("MongoDB no disponible para palabras; usando ficheros de recurso. Causa: {}", e.getMessage());
         }
-        if (cache.isEmpty()) {
-            loadIntoCache(all);
-            log.info("Palabras cargadas desde ficheros de recurso (fallback).");
-        }
+        log.info("Palabras de recurso disponibles como fallback.");
     }
 
     @Override

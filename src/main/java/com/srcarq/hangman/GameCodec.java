@@ -82,11 +82,23 @@ public class GameCodec {
             cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(TAG_LENGTH_BITS, iv));
             byte[] plaintext = cipher.doFinal(ciphertext);
 
-            return mapper.readValue(plaintext, GameState.class);
+            GameState state = mapper.readValue(plaintext, GameState.class);
+            validate(state);
+            return state;
         } catch (InvalidTokenException e) {
             throw e;
         } catch (Exception e) {
             // base64 inválido, tag GCM que no valida (manipulado) o JSON corrupto.
+            throw new InvalidTokenException();
+        }
+    }
+
+    private void validate(GameState state) {
+        if (state == null || state.gameId() == null || state.gameId().isBlank()
+                || state.word() == null || state.word().isBlank()
+                || state.masked() == null || state.guessed() == null
+                || state.status() == null || state.difficulty() == null
+                || state.remainingTimeMillis() < 0) {
             throw new InvalidTokenException();
         }
     }

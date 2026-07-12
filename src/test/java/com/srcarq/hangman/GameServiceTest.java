@@ -4,6 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.LinkedHashSet;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -19,8 +23,9 @@ class GameServiceTest {
         for (int i = 0; i < word.length(); i++) {
             masked.add("_");
         }
-        return new GameState(word, masked, attempts, new LinkedHashSet<>(),
-                GameStatus.IN_PROGRESS, Difficulty.EASY);
+        return new GameState("game-test", word, masked, attempts,
+                new LinkedHashSet<>(), GameStatus.IN_PROGRESS, Difficulty.EASY,
+                0, 0);
     }
 
     @Test
@@ -30,9 +35,12 @@ class GameServiceTest {
         assertThat(easy.masked()).containsOnly("_");
         assertThat(easy.masked()).hasSize(easy.word().length());
         assertThat(easy.status()).isEqualTo(GameStatus.IN_PROGRESS);
+        assertThat(easy.gameId()).isNotBlank();
 
         assertThat(service.newGame(Difficulty.MEDIUM, Language.CA).attempts()).isEqualTo(7);
         assertThat(service.newGame(Difficulty.HARD, Language.EN).attempts()).isEqualTo(5);
+        assertThat(service.newGame(Difficulty.EXTREME, Language.ES).remainingTimeMillis())
+                .isEqualTo(30_000);
     }
 
     @Test
@@ -78,8 +86,8 @@ class GameServiceTest {
 
     @Test
     void rejectsGuessAfterGameOver() {
-        GameState lost = new GameState("SOL", List.of("_", "_", "_"), 0,
-                new LinkedHashSet<>(), GameStatus.LOST, Difficulty.EASY);
+        GameState lost = new GameState("game-test", "SOL", List.of("_", "_", "_"),
+                0, new LinkedHashSet<>(), GameStatus.LOST, Difficulty.EASY, 0, 0);
         assertThatThrownBy(() -> service.guess(lost, "A"))
                 .isInstanceOf(GameOverException.class);
     }
@@ -104,5 +112,67 @@ class GameServiceTest {
     void handlesEnye() {
         GameState state = service.guess(gameWith("ÑU", 10), "ñ");
         assertThat(state.masked()).containsExactly("Ñ", "_");
+    }
+
+    @Test
+    void extremeTimerIsServerAuthoritativeAndAppliesBonusAndPenalty() {
+        MutableClock clock = new MutableClock(1_000_000);
+        GameService timedService = new GameService(words, clock);
+        GameState state = timedService.newGame(Difficulty.EXTREME, Language.ES);
+
+        clock.advanceMillis(5_000);
+        state = timedService.guess(state, "A");
+        assertThat(state.remainingTimeMillis()).isEqualTo(29_000); // 30 - 5 + 4
+
+        clock.advanceMillis(2_000);
+        state = timedService.guess(state, "Z");
+        assertThat(state.remainingTimeMillis()).isEqualTo(21_000); // 29 - 2 - 6
+        assertThat(state.status()).isEqualTo(GameStatus.IN_PROGRESS);
+    }
+
+    @Test
+    void extremeReplayCannotResetElapsedTimeAndExpiresOnServer() {
+        MutableClock clock = new MutableClock(2_000_000);
+        GameService timedService = new GameService(words, clock);
+        GameState original = timedService.newGame(Difficulty.EXTREME, Language.ES);
+
+        clock.advanceMillis(31_000);
+        GameState expired = timedService.guess(original, "A");
+
+        assertThat(expired.status()).isEqualTo(GameStatus.LOST);
+        assertThat(expired.remainingTimeMillis()).isZero();
+        assertThat(expired.masked()).containsOnly("_");
+    }
+
+    private static final class MutableClock extends Clock {
+        private long millis;
+
+        private MutableClock(long millis) {
+            this.millis = millis;
+        }
+
+        void advanceMillis(long amount) {
+            millis += amount;
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return ZoneOffset.UTC;
+        }
+
+        @Override
+        public Clock withZone(ZoneId zone) {
+            return this;
+        }
+
+        @Override
+        public Instant instant() {
+            return Instant.ofEpochMilli(millis);
+        }
+
+        @Override
+        public long millis() {
+            return millis;
+        }
     }
 }

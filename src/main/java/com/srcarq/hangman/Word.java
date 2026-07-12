@@ -14,7 +14,7 @@ public class Word {
     @Id
     private String id;
     private String language; // ES / CA / EN
-    private int level;        // 1 / 2 / 3
+    private int level;        // 1 / 2 / 3 / 4
     private String word;
 
     public Word() {

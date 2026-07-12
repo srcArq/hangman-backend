@@ -16,8 +16,8 @@ class GameCodecTest {
 
     private GameState sample() {
         Set<String> guessed = new LinkedHashSet<>(List.of("A", "Z"));
-        return new GameState("CASA", List.of("_", "A", "_", "A"), 9, guessed,
-                GameStatus.IN_PROGRESS, Difficulty.EASY);
+        return new GameState("game-123", "CASA", List.of("_", "A", "_", "A"),
+                9, guessed, GameStatus.IN_PROGRESS, Difficulty.EASY, 0, 0);
     }
 
     @Test
@@ -25,6 +25,7 @@ class GameCodecTest {
         GameState restored = codec.decode(codec.encode(sample()));
 
         assertThat(restored.word()).isEqualTo("CASA");
+        assertThat(restored.gameId()).isEqualTo("game-123");
         assertThat(restored.masked()).containsExactly("_", "A", "_", "A");
         assertThat(restored.attempts()).isEqualTo(9);
         assertThat(restored.guessed()).containsExactlyInAnyOrder("A", "Z");

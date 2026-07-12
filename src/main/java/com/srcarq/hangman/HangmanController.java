@@ -51,7 +51,7 @@ public class HangmanController {
     @PostMapping("/score")
     public List<RankingEntry> recordWin(@Valid @RequestBody ScoreRequest request) {
         GameState state = gameCodec.decode(request.token());
-        leaderboardService.recordWin(request.name().trim(), state, request.token());
+        leaderboardService.recordWin(request.name().trim(), state);
         return ranking();
     }
 
@@ -72,7 +72,8 @@ public class HangmanController {
                 new ArrayList<>(state.guessed()),
                 state.word().length(),
                 state.status().name(),
-                finished ? state.word() : null
+                finished ? state.word() : null,
+                state.remainingTimeMillis()
         );
     }
 }
