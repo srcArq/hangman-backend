@@ -47,11 +47,19 @@ public class HangmanController {
         return toResponse(next);
     }
 
+    /** Cierra una partida como perdida y revela la palabra al cliente. */
+    @PostMapping("/finish")
+    public GameResponse finish(@Valid @RequestBody FinishGameRequest request) {
+        GameState current = gameCodec.decode(request.token());
+        GameState next = gameService.finishAsLost(current);
+        return toResponse(next);
+    }
+
     /** Registra una victoria del jugador en el ranking (verifica el token ganador). */
     @PostMapping("/score")
     public List<RankingEntry> recordWin(@Valid @RequestBody ScoreRequest request) {
         GameState state = gameCodec.decode(request.token());
-        leaderboardService.recordWin(request.name().trim(), state);
+        leaderboardService.recordWin(request.name(), request.browserId(), state);
         return ranking();
     }
 

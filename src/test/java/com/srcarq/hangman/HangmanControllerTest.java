@@ -87,6 +87,20 @@ class HangmanControllerTest {
     }
 
     @Test
+    void finishEndsGameAndRevealsWord() throws Exception {
+        String token = selectLevel(1).get("token").asText();
+
+        JsonNode body = objectMapper.readTree(mockMvc.perform(post("/api/finish")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("token", token))))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString());
+
+        assertThat(body.get("status").asText()).isEqualTo("LOST");
+        assertThat(body.get("resultWord").asText()).isNotBlank();
+    }
+
+    @Test
     void invalidLevelReturns400() throws Exception {
         mockMvc.perform(post("/api/selectLevel")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -14,7 +14,7 @@ API REST del juego del Ahorcado, construida con Spring Boot, Java 21 y MongoDB.
 - Catálogo de palabras sincronizado con MongoDB y caché en memoria.
 - Fallback automático a recursos si Mongo no está disponible para seleccionar palabras.
 - Ranking global top 5 persistente en MongoDB.
-- Verificación del token ganador y deduplicación por partida para impedir sumar una victoria varias veces.
+- Verificación del token ganador, deduplicación por partida y una única fila por nombre de jugador.
 - Validación de entrada, CORS configurable y health check de Actuator.
 - Imagen Docker multi-stage con JRE 21 y usuario sin privilegios.
 
@@ -38,13 +38,18 @@ Todos los endpoints se sirven bajo el prefijo `/api` definido en `HangmanControl
 | ------ | ------------------- | --------------------------------------------------------------------------- |
 | `POST` | `/api/selectLevel`  | Inicia una partida. Body: `{ "level": 1-4, "language": "ES" \| "CA" \| "EN" }` (`language` es opcional y por defecto usa `ES`). Devuelve el estado con un `token` cifrado. |
 | `POST` | `/api/checkLetter`  | Juega una letra. Body: `{ "token": "...", "letter": "A-Z o Ñ" }`. Devuelve el estado actualizado. |
-| `POST` | `/api/score`        | Registra una victoria verificada y deduplicada. Body: `{ "name": "...", "token": "..." }`. Devuelve el ranking actual. |
+| `POST` | `/api/finish`       | Cierra una partida como perdida. Body: `{ "token": "..." }`. Devuelve `LOST` y revela `resultWord`. Se usa al agotarse el tiempo en Extremo. |
+| `POST` | `/api/score`        | Registra una victoria verificada y deduplicada. Body: `{ "name": "...", "browserId": "...", "token": "..." }`. `browserId` es anónimo y opcional para compatibilidad. Devuelve el ranking actual. |
 | `GET`  | `/api/ranking`      | Devuelve el top 5 de jugadores por número de victorias.                     |
 
 La respuesta de juego contiene `token`, `maskedWord`, `attempts`,
 `guessedLetters`, `wordLength`, `status`, `resultWord` y
 `remainingTimeMillis`. `resultWord` solo contiene la palabra cuando el estado es
 `WON` o `LOST`.
+
+El ranking no requiere login: el frontend envía un nombre de jugador y un
+identificador anónimo guardado en el navegador. Si el mismo nombre vuelve a
+puntuar, se actualiza la misma entrada del ranking.
 
 ---
 

@@ -15,13 +15,25 @@ public class RecordedGame {
     @Id
     private String id;
     private String name;
+    private String browserId;
+    private boolean countedInPlayer;
 
     public RecordedGame() {
     }
 
     public RecordedGame(String id, String name) {
+        this(id, name, null, false);
+    }
+
+    public RecordedGame(String id, String name, String browserId) {
+        this(id, name, browserId, false);
+    }
+
+    public RecordedGame(String id, String name, String browserId, boolean countedInPlayer) {
         this.id = id;
         this.name = name;
+        this.browserId = browserId;
+        this.countedInPlayer = countedInPlayer;
     }
 
     public String getId() {
@@ -30,5 +42,13 @@ public class RecordedGame {
 
     public String getName() {
         return name;
+    }
+
+    public String getBrowserId() {
+        return browserId;
+    }
+
+    public boolean isCountedInPlayer() {
+        return countedInPlayer;
     }
 }

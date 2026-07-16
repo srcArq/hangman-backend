@@ -34,17 +34,24 @@ public class LeaderboardService {
      *
      * @throws IllegalArgumentException si la partida no está ganada
      */
-    public void recordWin(String name, GameState state) {
+    public void recordWin(String name, String browserId, GameState state) {
         if (state.status() != GameStatus.WON) {
             throw new IllegalArgumentException("Solo se puntúan partidas ganadas");
         }
+        String playerName = normalizeName(name);
         try {
             // El id estable de la partida, no el token aleatorio, cierra los
             // replays ramificados desde un token anterior a la victoria.
-            recordedGameRepository.insert(new RecordedGame(state.gameId(), name));
+            recordedGameRepository.insert(new RecordedGame(state.gameId(), playerName,
+                    normalizeBrowserId(browserId), true));
         } catch (DuplicateKeyException e) {
             return; // partida ya contabilizada: no se vuelve a sumar
         }
+
+        int storedWins = playerScoreRepository.findById(playerName)
+                .map(PlayerScore::getWins)
+                .orElse(0);
+        playerScoreRepository.save(new PlayerScore(playerName, storedWins + 1));
     }
 
     /** Top 5 jugadores por victorias. */
@@ -57,11 +64,13 @@ public class LeaderboardService {
         for (PlayerScore legacy : playerScoreRepository.findAll()) {
             totals.merge(legacy.getName(), legacy.getWins(), Integer::sum);
         }
+        Map<String, Integer> eventTotals = new HashMap<>();
         for (RecordedGame game : recordedGameRepository.findAll()) {
-            if (game.getName() != null && !game.getName().isBlank()) {
-                totals.merge(game.getName(), 1, Integer::sum);
+            if (!game.isCountedInPlayer() && game.getName() != null && !game.getName().isBlank()) {
+                eventTotals.merge(game.getName(), 1, Integer::sum);
             }
         }
+        eventTotals.forEach((name, wins) -> totals.merge(name, wins, Integer::sum));
 
         return totals.entrySet().stream()
                 .map(entry -> new PlayerScore(entry.getKey(), entry.getValue()))
@@ -69,5 +78,23 @@ public class LeaderboardService {
                         .thenComparing(PlayerScore::getName, String.CASE_INSENSITIVE_ORDER))
                 .limit(5)
                 .toList();
+    }
+
+    private String normalizeName(String name) {
+        if (name == null) {
+            throw new IllegalArgumentException("Falta el nombre");
+        }
+        String normalized = name.trim().replaceAll("\\s+", " ");
+        if (normalized.isBlank()) {
+            throw new IllegalArgumentException("Falta el nombre");
+        }
+        return normalized;
+    }
+
+    private String normalizeBrowserId(String browserId) {
+        if (browserId == null || browserId.isBlank()) {
+            return null;
+        }
+        return browserId.trim();
     }
 }

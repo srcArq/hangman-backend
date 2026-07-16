@@ -115,6 +115,18 @@ public class GameService {
                 state.difficulty().isTimed() ? now : 0);
     }
 
+    /** Cierra una partida en curso como perdida para poder revelar la palabra. */
+    public GameState finishAsLost(GameState state) {
+        if (state.status() != GameStatus.IN_PROGRESS) {
+            return state;
+        }
+        long now = clock.millis();
+        long remainingTime = remainingTimeAt(state, now);
+        return copyWith(state, state.masked(), state.attempts(), state.guessed(),
+                GameStatus.LOST, state.difficulty().isTimed() ? remainingTime : 0,
+                state.difficulty().isTimed() ? now : 0);
+    }
+
     private long remainingTimeAt(GameState state, long now) {
         if (!state.difficulty().isTimed()) {
             return 0;
